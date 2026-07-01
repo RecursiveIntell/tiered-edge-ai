@@ -1,0 +1,93 @@
+[package]
+edition      = "2024"
+name         = "tiered-sentinel"
+rust-version = "1.88"
+version      = "0.1.0"
+
+[[bin]]
+name = "sentinel"
+path = "./src/bin/sentinel.rs"
+
+[[bin]]
+name = "sine-test"
+path = "./src/bin/sine_test.rs"
+
+[[bin]]
+name = "inference-smoke"
+path = "./src/bin/inference_smoke.rs"
+
+[[bin]]
+name = "wifi-connect"
+path = "./src/bin/wifi_connect.rs"
+
+[[bin]]
+name = "llm-limit-bench"
+path = "./src/bin/llm_limit_bench.rs"
+
+[[bin]]
+name = "trained-char-lm"
+path = "./src/bin/trained_char_lm.rs"
+
+[[bin]]
+name = "sentinel-wifi"
+path = "./src/bin/sentinel_wifi.rs"
+
+[dependencies]
+esp-hal = { version = "~1.1.0", features = ["defmt", "esp32s3", "unstable"] }
+spec-core = { path = "../../spec-engine/core" }
+
+defmt                  = "1.1"
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["defmt", "esp32s3"] }
+
+critical-section = "1.2.0"
+embassy-executor = { version = "0.10.0", features = ["defmt", "executor-thread"] }
+embassy-net = { version = "0.9.1", features = [
+  "defmt",
+  "dhcpv4",
+  "medium-ethernet",
+  "tcp",
+] }
+embassy-time = { version = "0.5.0", features = ["defmt"] }
+esp-alloc = { version = "0.10.0", features = ["defmt"] }
+esp-backtrace = { version = "0.19.0", features = [
+  "defmt",
+  "esp32s3",
+  "panic-handler",
+] }
+esp-println = { version = "0.17.0", features = ["defmt-espflash", "esp32s3"] }
+esp-rtos = { version = "0.3.0", features = [
+  "defmt",
+  "embassy",
+  "esp-alloc",
+  "esp-radio",
+  "esp32s3",
+] }
+static_cell = "2.1.1"
+
+# TinyML inference — no_std, TFLite models
+microflow = "0.1"
+nalgebra = { version = "0.32", default-features = false, features = ["macros"] }
+libm = "0.2"
+
+# WiFi (esp-hal provides via esp-radio)
+esp-radio = { version = "0.18.0", features = [
+  "defmt",
+  "esp-alloc",
+  "esp32s3",
+  "unstable",
+  "wifi",
+] }
+
+# Embedded IO traits
+embedded-io = "0.6.1"
+embedded-io-async = "0.7"
+heapless = "0.8"
+
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug         = 2
+lto           = 'fat'
+opt-level     = 's'

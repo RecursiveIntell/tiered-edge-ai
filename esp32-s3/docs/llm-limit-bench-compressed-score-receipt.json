@@ -1,0 +1,94 @@
+{
+  "benchmark": "esp32_s3_tiny_gpt_compressed_score_attention_bench",
+  "timestamp_utc": "2026-06-29T21:49:12Z",
+  "board": {
+    "chip": "esp32s3",
+    "revision": "v0.2",
+    "flash_bytes": 16384000,
+    "port": "/dev/ttyACM0",
+    "mac": "94:a9:90:d2:41:f4"
+  },
+  "firmware": {
+    "crate": "tiered-sentinel",
+    "binary": "llm-limit-bench",
+    "source": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/src/bin/llm_limit_bench.rs",
+    "elf": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/target/xtensa-esp32s3-none-elf/release/llm-limit-bench",
+    "build_command": "source ~/export-esp.sh && cargo +esp build --target xtensa-esp32s3-none-elf --bin llm-limit-bench --release -Z build-std=core,alloc",
+    "flash_command": "espflash flash target/xtensa-esp32s3-none-elf/release/llm-limit-bench --port /dev/ttyACM0 --non-interactive --chip esp32s3 --monitor --log-format defmt --baud 115200 --monitor-baud 115200 --after hard-reset",
+    "app_partition_bytes": 98368,
+    "app_partition_percent": 0.6
+  },
+  "model_shape": {
+    "vocab_size": 256,
+    "embed_dim": 48,
+    "layers": 2,
+    "heads": 3,
+    "head_dim": 16,
+    "ffn_dim": 96,
+    "weight_quantization": "int4 fixture weights"
+  },
+  "kv_memory": {
+    "exact_f32_bytes_per_token": 768,
+    "int4_bytes_per_token": 96,
+    "compression_ratio": 8.0,
+    "theoretical_8MiB_exact_tokens": 10922,
+    "theoretical_8MiB_int4_tokens": 87381,
+    "theoretical_capacity_multiplier": 8.0,
+    "measured_capacity_multiplier_in_harness": 4.0
+  },
+  "paths_compared": {
+    "exact_f32": "stores f32 keys/values and scores f32 keys directly",
+    "int4_decode_score": "stores packed int4 keys/values, dequantizes key elements while scoring, dequantizes values for aggregation",
+    "compressed_score": "stores packed int4 keys/values, quantizes query once and scores packed int4 key nibbles directly, dequantizes values for aggregation"
+  },
+  "measured_on_board": {
+    "exact": {
+      "tokens": 64,
+      "micros": 1848219,
+      "tokens_per_second": 34.62,
+      "tps_x100": 3462,
+      "last_token": 1
+    },
+    "int4_decode_score": {
+      "tokens": 256,
+      "micros": 11796613,
+      "tokens_per_second": 21.7,
+      "tps_x100": 2170,
+      "last_token": 1
+    },
+    "compressed_score": {
+      "tokens": 256,
+      "micros": 11998502,
+      "tokens_per_second": 21.33,
+      "tps_x100": 2133,
+      "last_token": 1
+    }
+  },
+  "ratios": {
+    "int4_decode_score_speed_vs_exact": 0.626805,
+    "compressed_score_speed_vs_int4_decode_score": 0.98,
+    "compressed_score_speed_vs_exact": 0.61,
+    "compressed_score_speed_delta_vs_int4_decode_score_percent": -2.0
+  },
+  "verification": {
+    "build_passed": true,
+    "flashed": true,
+    "runtime_completed": true,
+    "idle_after_completion_seen": true,
+    "panic_seen_after_run_start": false,
+    "watchdog_reset_after_run_start_seen": false,
+    "log_path": "/tmp/llm-limit-bench-compressed-score.log",
+    "plan_path": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/docs/plans/2026-06-29-compressed-domain-attention-bench.md"
+  },
+  "interpretation": {
+    "capacity_result": "int4 KV gives 8x theoretical KV capacity versus exact f32 for this model shape",
+    "speed_result": "compressed-score path was slightly slower than int4 decode-score in this pure-Rust hardware run (21.33 tok/s vs 21.70 tok/s, 0.98x)",
+    "claim_boundary": "This is a no_std ESP32-S3 compressed-key scoring gate on deterministic fixture transformer weights. It is not a trained checkpoint quality result and not a full fib-quant/turbo-quant Gram-table port.",
+    "next_gate": "Use ESP-NN/SIMD or a real no_std fib/turbo compressed-domain scorer; current scalar query quantization overhead offsets packed-key scoring savings."
+  },
+  "blockers": [
+    "Compressed-score implementation still decodes values for aggregation; only key scoring changed.",
+    "Pure Rust scalar int4 packed scoring did not improve speed on ESP32-S3; compressed-domain math needs SIMD/Gram-table style implementation to become a speed win.",
+    "Fixture transformer weights measure engine envelope, not language quality."
+  ]
+}

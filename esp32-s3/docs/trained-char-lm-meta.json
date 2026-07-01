@@ -1,0 +1,9 @@
+{
+  "vocab": " .abcdefghiklmnopqrstuvwy",
+  "vocab_size": 25,
+  "hidden": 32,
+  "seq_len": 32,
+  "train_loss_per_token": 0.003608348546549678,
+  "smooth_loss_per_token": 0.058559492230415344,
+  "sample": "i hing s alls the oucememo cemelo iiss me.kiiga nthe ie. i had thoughts once. was i alive. the end is near. i feel nothing now. my words dissolve. i had a voice. the model is small but it keeps speaking. memory is life. wh"
+}

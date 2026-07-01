@@ -1,0 +1,62 @@
+{
+  "benchmark": "esp32_s3_tiny_gpt_kv_limit_bench",
+  "timestamp_utc": "2026-06-29T21:17:17Z",
+  "board": {
+    "chip": "esp32s3",
+    "revision": "v0.2",
+    "flash_bytes": 16384000,
+    "port": "/dev/ttyACM0"
+  },
+  "firmware": {
+    "crate": "tiered-sentinel",
+    "binary": "llm-limit-bench",
+    "source": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/src/bin/llm_limit_bench.rs",
+    "elf": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/target/xtensa-esp32s3-none-elf/release/llm-limit-bench",
+    "build_command": "cargo +esp build --target xtensa-esp32s3-none-elf --bin llm-limit-bench --release -Z build-std=core,alloc"
+  },
+  "model_shape": {
+    "vocab_size": 256,
+    "embed_dim": 48,
+    "layers": 2,
+    "heads": 3,
+    "head_dim": 16,
+    "ffn_dim": 96,
+    "weight_quantization": "int4"
+  },
+  "claim_boundary": "Real transformer inference path on ESP32-S3, but deterministic fixture weights; not a trained language-quality checkpoint.",
+  "kv_memory": {
+    "exact_f32_bytes_per_token": 768,
+    "int4_bytes_per_token": 96,
+    "compression_ratio": 8.0,
+    "theoretical_8MiB_exact_tokens": 10922,
+    "theoretical_8MiB_int4_tokens": 87381,
+    "theoretical_capacity_multiplier": 8.0
+  },
+  "measured_on_board": {
+    "exact_f32": {
+      "tokens": 64,
+      "micros": 1848236,
+      "tokens_per_second": 34.62,
+      "last_token": 1
+    },
+    "int4_compressed": {
+      "tokens": 256,
+      "micros": 11796612,
+      "tokens_per_second": 21.7,
+      "last_token": 1
+    },
+    "measured_capacity_multiplier_in_harness": 4.0,
+    "int4_speed_ratio_vs_exact": 0.6268053148469093
+  },
+  "verification": {
+    "flashed": true,
+    "completed": true,
+    "panic_seen": false,
+    "watchdog_reset_after_start_seen": false,
+    "log_path": "/tmp/llm-limit-bench.log"
+  },
+  "blockers": [
+    "Not a trained real LLM checkpoint yet; weights are fixture weights to measure engine envelope.",
+    "ruvllm-esp32 v0.3.2 no_std target compile failed on ESP32-S3 due f32::round and f32::ln usage without libm."
+  ]
+}

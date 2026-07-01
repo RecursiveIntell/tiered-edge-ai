@@ -1,0 +1,3 @@
+numpy
+ai-edge-litert
+onnxruntime

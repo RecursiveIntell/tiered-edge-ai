@@ -1,0 +1,19 @@
+[package]
+name = "tiered-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Quantization bridge for tiered edge AI — exports models at multiple precision levels"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Josh's quantization crates
+# fib-quant = { path = "../../Coding/Libraries/fib-quant" }
+# turbo-quant = { path = "../../Coding/Libraries/turbo-quant" }
+
+# Model handling
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Math
+nalgebra = "0.33"
+

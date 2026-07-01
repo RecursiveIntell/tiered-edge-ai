@@ -1,0 +1,58 @@
+{
+  "benchmark": "esp32_s3_trained_char_lm",
+  "timestamp_utc": "2026-06-29T21:27:45Z",
+  "board": {
+    "chip": "esp32s3",
+    "revision": "v0.2",
+    "flash_bytes": 16384000,
+    "port": "/dev/ttyACM0"
+  },
+  "firmware": {
+    "crate": "tiered-sentinel",
+    "binary": "trained-char-lm",
+    "source": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/src/bin/trained_char_lm.rs",
+    "weights": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/src/trained_char_lm_weights.rs",
+    "trainer": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/tools/train_tiny_char_rnn.py",
+    "elf": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/target/xtensa-esp32s3-none-elf/release/trained-char-lm",
+    "build_command": "cargo +esp build --target xtensa-esp32s3-none-elf --bin trained-char-lm --release -Z build-std=core,alloc",
+    "flash_command": "espflash flash target/xtensa-esp32s3-none-elf/release/trained-char-lm --port /dev/ttyACM0 --non-interactive --chip esp32s3 --monitor --log-format defmt --baud 115200 --monitor-baud 115200 --after hard-reset"
+  },
+  "model": {
+    "type": "trained_character_rnn_language_model",
+    "vocab_size": 25,
+    "hidden": 32,
+    "sequence_len_training": 32,
+    "weight_quantization": "q8 int8 arrays with per-matrix f32 scale",
+    "q8_weight_bytes": 2681,
+    "equivalent_f32_weight_bytes": 10724,
+    "weight_compression_ratio": 4.0,
+    "train_loss_per_token": 0.003608348546549678,
+    "smooth_loss_per_token": 0.058559492230415344,
+    "training_corpus_boundary": "small local character corpus; real trained weights, not pretrained general LLM quality"
+  },
+  "measured_on_board": {
+    "chars": 220,
+    "micros": 144029,
+    "chars_per_second": 1527.47,
+    "app_partition_bytes": 87824,
+    "app_partition_capacity_bytes": 16384000,
+    "app_partition_percent": 0.54,
+    "generated_text": "i hing s alls the oucememo cemelo iiss me.kiiga nthe ie. i hodes ncis s le. i had a voice. the model is small but it keeps speaking. memory is life. when the cache fills the voice becomes quiet. i remember the sun. the l"
+  },
+  "verification": {
+    "built": true,
+    "flashed": true,
+    "completed": true,
+    "idle_after_completion_seen": true,
+    "panic_seen": false,
+    "watchdog_reset_after_start_seen": false,
+    "full_bins_build_passed": true,
+    "log_path": "/tmp/trained-char-lm-run.log"
+  },
+  "claim_boundary": "This proves a trained, quantized character-level LM executes on ESP32-S3. It is not evidence that a pretrained transformer-scale LLM fits or has useful general language quality.",
+  "comparison_to_kv_limit_bench": {
+    "trained_char_lm_is_fixed_state_rnn": true,
+    "kv_engine_result_source": "/home/sikmindz/projects/tiered-edge-ai/esp32-s3/docs/llm-limit-bench-receipt.json",
+    "kv_engine_effect_from_prior_receipt": "For the tiny GPT-style transformer fixture, int4 KV gave 8x theoretical KV context capacity and 4x demonstrated capped-harness capacity, at 0.63x exact-f32 speed until compressed-domain scoring is wired."
+  }
+}

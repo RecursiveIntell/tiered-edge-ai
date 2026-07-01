@@ -1,0 +1,15 @@
+[Unit]
+Description=Tiered Edge AI UNO Q inference server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/tiered-ai-server
+ExecStart=%h/tiered-ai-server/run_service.sh
+Restart=on-failure
+RestartSec=2
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
