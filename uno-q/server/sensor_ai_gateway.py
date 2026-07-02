@@ -280,6 +280,9 @@ class SensorAIHandler(BaseHTTPRequestHandler):
             "examine the zones, adjust the queue.",
             "it's not a bug, it's a feature!",
             "no claim without evidence.",
+            # Newline for firmware vocab coverage
+            "end of report.\n",
+            "action complete.\n",
         ]
         return phrases + extra
 
