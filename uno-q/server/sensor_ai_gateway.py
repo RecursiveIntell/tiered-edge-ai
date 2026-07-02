@@ -244,7 +244,12 @@ class SensorAIHandler(BaseHTTPRequestHandler):
         })
 
     def _build_domain_corpus(self, extra):
-        """Domain-specific training corpus for ESP32 sensor status phrases."""
+        """Domain-specific training corpus for ESP32 sensor status phrases.
+
+        Includes all 33 characters from the firmware vocab to ensure
+        RILM packs are directly flashable without vocab remapping.
+        Firmware vocab: abcdefghijklmnopqrstuvwxyz .,!?\n'
+        """
         phrases = [
             "hot room. action is check airflow.",
             "missing sensor. action is no claim.",
@@ -262,14 +267,19 @@ class SensorAIHandler(BaseHTTPRequestHandler):
             "temperature normal. action is log receipt.",
             "humidity high. action is ventilate.",
             "humidity normal. action is log receipt.",
-            "the receipt says heat warning.",
+            "the receipt says heat warning!",
             "the receipt says normal reading.",
             "the receipt says stale reading.",
             "the receipt says sensor missing.",
-            "the gateway should verify the claim.",
+            "the gateway should verify the claim?",
             "confidence is high. log the receipt.",
             "confidence is low. escalate to gateway.",
             "the room can report before the cloud wakes.",
+            # Include all firmware vocab chars
+            "jump quickly, fix the vexing puzzle?",
+            "examine the zones, adjust the queue.",
+            "it's not a bug, it's a feature!",
+            "no claim without evidence.",
         ]
         return phrases + extra
 
