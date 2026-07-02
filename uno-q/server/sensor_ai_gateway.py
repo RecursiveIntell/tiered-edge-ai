@@ -360,10 +360,14 @@ class SensorAIHandler(BaseHTTPRequestHandler):
 
         # LSTM weights
         for l in range(layers):
-            w_ih = model.lstm.weight_ih_l[l].detach().cpu().numpy()
-            w_hh = model.lstm.weight_hh_l[l].detach().cpu().numpy()
-            b_ih = model.lstm.bias_ih_l[l].detach().cpu().numpy()
-            b_hh = model.lstm.bias_hh_l[l].detach().cpu().numpy() if hasattr(model.lstm, f'bias_hh_l{l}') else np.zeros_like(b_ih)
+            w_ih = getattr(model.lstm, f'weight_ih_l{l}').detach().cpu().numpy()
+            w_hh = getattr(model.lstm, f'weight_hh_l{l}').detach().cpu().numpy()
+            b_ih = getattr(model.lstm, f'bias_ih_l{l}').detach().cpu().numpy()
+            b_hh = getattr(model.lstm, f'bias_hh_l{l}', None)
+            if b_hh is not None:
+                b_hh = b_hh.detach().cpu().numpy()
+            else:
+                b_hh = np.zeros_like(b_ih)
 
             # Quantize weights to int8
             wih_scale = float(max(np.abs(w_ih).max(), 1e-8) / 127.0)
