@@ -1,118 +1,62 @@
-# Tiered Edge AI — Adaptive Quantization Inference Pipeline
+# Tiered Edge AI
 
-A hierarchical edge AI system where an ultra-low-power ESP32-S3 runs a tiny
-quantized sentinel model continuously, and wakes a powerful Arduino UNO Q 4GB
-(quad-core ARM A53 + GPU) for heavy inference only when needed.
+An experimental split between ESP32-S3 firmware, a host inference receiver, and typed quantization/feature-transfer contracts.
 
-The novel contribution: the same neural network model is exported at two
-different quantization levels using custom vector quantization (fib-quant /
-turbo-quant), creating a confidence bridge between tiers.
+The source contains runnable demonstration pieces and proposed integration work. It does not yet implement a complete same-model dual-quantization deployment or prove automatic power management, GPU acceleration, or end-to-end hardware reliability.
 
-## Architecture
+## What is implemented
 
-```
-                          TIERED INFERENCE PIPELINE
+- [esp32-s3/src/bin](esp32-s3/src/bin/): no_std firmware examples for sine inference, sentinel logic, WiFi, and additional local inference experiments
+- [uno-q/server/server.py](uno-q/server/server.py): a framed TCP receiver for `TEAI` messages; it attempts TFLite or ONNX loading and falls back to a mock path when no usable model/backend is available
+- [uno-q/server/mock_client.py](uno-q/server/mock_client.py): host-side protocol client
+- [bridge/src/lib.rs](bridge/src/lib.rs): tier and quantization configuration types, feature-transfer serialization, size estimates, and unit tests
 
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                     ESP32-S3 (TIER 0 — SENTINEL)                 │
-  │                                                                 │
-  │  Xtensa LX7 dual-core @ 240MHz                                  │
-  │  512KB SRAM + 8MB PSRAM                                         │
-  │  Always-on, ultra-low-power (~50mA)                             │
-  │                                                                 │
-  │  ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐    │
-  │  │  Sensor/Cam  │───▶│  MicroFlow    │───▶│ Confidence      │    │
-  │  │  Input       │    │  int4/int8    │    │ Assessor        │    │
-  │  │              │    │  Sentinel     │    │                 │    │
-  │  └─────────────┘    │  Model        │    │ if conf < θ:    │    │
-  │                      └──────────────┘    │   wake UNO Q    │    │
-  │                                           └────────┬────────┘    │
-  │                                                    │ WiFi        │
-  └────────────────────────────────────────────────────┼─────────────┘
-                                                       │
-                          Wake signal + feature vector │
-                                                       │
-  ┌────────────────────────────────────────────────────┼─────────────┐
-  │                  ARDUINO UNO Q 4GB (TIER 1 — HEAVY)              │
-  │                    │                                             │
-  │  Qualcomm QRB2210 quad-core A53 @ 2.0GHz + Adreno GPU           │
-  │  4GB LPDDR4 RAM, 32GB eMMC, Debian Linux                         │
-  │  Boots on demand (~3s), runs full ML framework                   │
-  │                    │                                             │
-  │  ┌─────────────────▼──────────┐    ┌──────────────────────┐      │
-  │  │  Inference Server          │    │  Heavy Model          │      │
-  │  │  (Python / Rust)           │───▶│  int8 / float16       │      │
-  │  │  Receives wake + features  │    │  YOLO / MobileNet /   │      │
-  │  │  Returns result to ESP32   │    │  Custom model          │      │
-  │  └────────────────────────────┘    └──────────────────────┘      │
-  │                                                                 │
-  │  STM32U585 Cortex-M33 handles real-time I/O                     │
-  └─────────────────────────────────────────────────────────────────┘
+The bridge's FibQuant/TurboQuant dependencies are commented out in [bridge/Cargo.toml](bridge/Cargo.toml). Naming those schemes in an enum does not implement model conversion, confidence calibration, or codec integration.
+
+## Protocol boundary
+
+The firmware/receiver path uses TCP with a `TEAI` magic value, a little-endian payload length, and a typed feature payload. Responses are length-prefixed JSON. It is not an HTTP API. A running host receiver is required; a network message does not itself power on an off gateway.
+
+## Host checks
+
+```bash
+python3 -m py_compile uno-q/server/server.py uno-q/server/mock_client.py
+cargo test --manifest-path bridge/Cargo.toml
 ```
 
-## Components
+The Python check validates syntax. The Rust tests cover the local contract helpers. Neither exercises an ESP32 or establishes real-model inference.
 
-### esp32-s3/ — Tier 0: Sentinel Firmware (Rust, no_std)
+For a controlled local protocol experiment, inspect the receiver's bind behavior before running it:
 
-- MicroFlow TinyML inference engine with int8 quantized TFLite models
-- WiFi connectivity to communicate with UNO Q
-- Confidence assessment + wake signal protocol
-- Sensor input (camera, microphone, environmental sensors)
-
-### uno-q/ — Tier 1: Heavy Inference Server (Python + Rust)
-
-- HTTP server receiving wake signals from ESP32-S3
-- Full ML framework (TensorFlow Lite / ONNX Runtime / PyTorch)
-- Runs higher-precision model (int8/float16) with full feature set
-- GPU acceleration via Adreno
-- Returns rich inference results to ESP32-S3 or cloud
-
-### bridge/ — Quantization Bridge (Rust)
-
-The core novelty: exports the same model at two quantization levels.
-
-- Uses fib-quant for radial-angular vector quantization (int4-equivalent)
-- Uses turbo-quant for PolarQuant/TurboQuant compression
-- Model export pipeline: PyTorch → dual quantization → both tier models
-- Confidence calibration: maps tier-0 confidence to tier-1 expected accuracy
-
-## Hardware
-
-| Board | Role | CPU | RAM | Storage |
-|-------|------|-----|-----|---------|
-| ESP32-S3 | Tier 0 (sentinel) | Xtensa LX7 dual @ 240MHz | 512KB SRAM + 8MB PSRAM | 8MB+ flash |
-| Arduino UNO Q 4GB | Tier 1 (heavy) | Qualcomm QRB2210 quad A53 @ 2GHz + Adreno GPU | 4GB LPDDR4 | 32GB eMMC |
-
-## Project Structure
-
-```
-tiered-edge-ai/
-├── esp32-s3/          # Tier 0 firmware (Rust, no_std, esp-hal)
-│   ├── Cargo.toml
-│   ├── .cargo/config.toml
-│   ├── models/        # Quantized TFLite models (int4/int8)
-│   └── src/bin/       # Firmware binaries
-├── uno-q/             # Tier 1 server (Python + Rust)
-│   ├── server/        # Inference server
-│   └── models/        # Higher-precision models (int8/float16)
-├── bridge/            # Quantization bridge (Rust)
-│   ├── Cargo.toml
-│   └── src/           # Dual-quantization export pipeline
-├── scripts/           # Model training + export scripts
-└── docs/              # Architecture docs, benchmarks
+```bash
+python3 uno-q/server/server.py --port 8080
+# In another terminal:
+python3 uno-q/server/mock_client.py --host 127.0.0.1 --port 8080
 ```
 
-## Status
+Without a valid model/backend, this tests mock behavior. Check the receiver logs for the selected backend and keep the service on a trusted test network; this example does not supply a production authentication or transport-security boundary.
 
-- [x] ESP32-S3 toolchain installed (Xtensa Rust 1.95.0.0, esp-hal v1.1.0)
-- [x] MicroFlow verified on ESP32-S3 target (sine model compiles + runs)
-- [x] Project structure created
-- [ ] ESP32-S3 sentinel firmware with WiFi trigger
-- [ ] UNO Q inference server
-- [ ] Quantization bridge (fib-quant/turbo-quant integration)
-- [ ] Model export pipeline (PyTorch → dual quantization)
-- [ ] End-to-end demo
+## ESP32-S3 builds
+
+Use an appropriate board and the custom Xtensa Rust toolchain documented by [esp-rs/espup](https://github.com/esp-rs/espup). The firmware has its own [Cargo manifest](esp32-s3/Cargo.toml), target configuration, build script, and environment requirements.
+
+```bash
+cd esp32-s3
+cargo +esp build --release --bin sentinel-wifi
+```
+
+Review the chosen binary before flashing. Several examples use synthetic inputs; their presence does not prove camera, microphone, physical sensor, or display integration. Board flash/PSRAM capacity, available pins, power draw, and timing must be established on the exact hardware.
+
+## Still to establish
+
+- Actual dual-quantization export with the selected codec owners
+- Measured confidence calibration between a defined pair of models
+- Real sensor input and the chosen hardware's complete inference path
+- Device/network failure and recovery behavior
+- Power-management and accelerator measurements where those are intended
+
+The original architecture is a design direction. Source-present scripts, mock responses, and estimated tensor sizes are not interchangeable with deployment receipts.
 
 ## License
 
-MIT OR Apache-2.0
+The bridge manifest declares `MIT OR Apache-2.0`; inspect each component's manifest and notices for its own terms. No repository-wide license text is supplied in this checkout.
