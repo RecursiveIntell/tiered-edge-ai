@@ -1,5 +1,7 @@
 # Tiered Edge AI
 
+<!-- last-verified: 2026-10-23 -->
+
 An experimental split between ESP32-S3 firmware, a host inference receiver, and typed quantization/feature-transfer contracts.
 
 The source contains runnable demonstration pieces and proposed integration work. It does not yet implement a complete same-model dual-quantization deployment or prove automatic power management, GPU acceleration, or end-to-end hardware reliability.
@@ -24,7 +26,7 @@ python3 -m py_compile uno-q/server/server.py uno-q/server/mock_client.py
 cargo test --manifest-path bridge/Cargo.toml
 ```
 
-The Python check validates syntax. The Rust tests cover the local contract helpers. Neither exercises an ESP32 or establishes real-model inference.
+The Python check validates syntax. The Rust tests cover the local contract helpers. Neither exercises an ESP32 or establishes real-model inference. These are command examples, not claims that the commands passed during this README review.
 
 For a controlled local protocol experiment, inspect the receiver's bind behavior before running it:
 
@@ -34,7 +36,9 @@ python3 uno-q/server/server.py --port 8080
 python3 uno-q/server/mock_client.py --host 127.0.0.1 --port 8080
 ```
 
-Without a valid model/backend, this tests mock behavior. Check the receiver logs for the selected backend and keep the service on a trusted test network; this example does not supply a production authentication or transport-security boundary.
+The receiver binds to `0.0.0.0:8080` (all IPv4 interfaces), without authentication or transport security. Keep the host on an isolated/trusted test network and block inbound access from untrusted networks; the mock client's loopback default does not restrict the server's listener.
+
+Without a valid model/backend, this tests mock behavior. The response is length-prefixed JSON with `prediction`, `confidence`, `inference_time_ms`, `model_name`, and `tier` fields; in mock mode, the prediction is the element-wise sine of the submitted features. Check the receiver logs for the selected backend. This example does not supply a production authentication or transport-security boundary.
 
 ## ESP32-S3 builds
 
